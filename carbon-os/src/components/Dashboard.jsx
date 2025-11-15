@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award } from 'lucide-react';
+import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award, LogOut, User } from 'lucide-react';
 import MetricsCard from './MetricsCard';
 import ActivityLogger from './ActivityLogger';
 import Charts from './Charts';
@@ -10,7 +10,7 @@ import {
   getEmissionsBreakdown,
 } from '../utils/carbonCalculator';
 
-const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode }) => {
+const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, onLogout, username }) => {
   const [isLoggerOpen, setIsLoggerOpen] = useState(false);
   const [period, setPeriod] = useState('daily');
 
@@ -38,6 +38,12 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode }) 
             </div>
 
             <div className="flex items-center gap-4">
+              {/* User Display */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                <User size={16} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">{username}</span>
+              </div>
+
               {/* Sleep Mode Toggle */}
               <button
                 onClick={onToggleSleepMode}
@@ -61,6 +67,15 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode }) 
               >
                 <Plus size={18} />
                 <span className="text-sm font-medium">Log Activity</span>
+              </button>
+
+              {/* Logout Button */}
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+              >
+                <LogOut size={18} />
+                <span className="text-sm font-medium">Logout</span>
               </button>
             </div>
           </div>
