@@ -1,2 +1,3 @@
 41
-"hello"
+"hello
+print("hello world")
