@@ -1,20 +1,35 @@
 import { useState } from 'react';
-import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award, LogOut, User, Trophy } from 'lucide-react';
+import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award, LogOut, User, Trophy, Gift, Ticket, Store } from 'lucide-react';
 import MetricsCard from './MetricsCard';
 import ActivityLogger from './ActivityLogger';
 import Charts from './Charts';
 import Insights from './Insights';
 import Leaderboard from './Leaderboard';
+import PointsWidget from './PointsWidget';
+import RewardsMarketplace from './RewardsMarketplace';
+import MyCoupons from './MyCoupons';
+import ForBusinesses from './ForBusinesses';
 import {
   getEmissionsByPeriod,
   compareToAverage,
   getEmissionsBreakdown,
 } from '../utils/carbonCalculator';
 
-const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, onLogout, username }) => {
+const Dashboard = ({
+  activities,
+  onAddActivity,
+  sleepMode,
+  onToggleSleepMode,
+  onLogout,
+  username,
+  rewardsData,
+  redeemedCoupons,
+  onRedeemCoupon,
+  onMarkCouponAsUsed,
+}) => {
   const [isLoggerOpen, setIsLoggerOpen] = useState(false);
   const [period, setPeriod] = useState('daily');
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'leaderboard'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'leaderboard', 'rewards', 'coupons', 'businesses'
 
   const totalEmissions = getEmissionsByPeriod(activities, period);
   const comparison = compareToAverage(totalEmissions, period);
@@ -96,29 +111,79 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, on
           </div>
         )}
 
-        {/* View Selector - Dashboard vs Leaderboard */}
-        <div className="mb-6 flex gap-3">
+        {/* Points Widget */}
+        {currentView === 'dashboard' && (
+          <div className="mb-6">
+            <PointsWidget
+              currentStreak={rewardsData.currentStreak}
+              longestStreak={rewardsData.longestStreak}
+              availablePoints={rewardsData.totalPoints - rewardsData.spentPoints}
+              onClick={() => setCurrentView('rewards')}
+            />
+          </div>
+        )}
+
+        {/* View Selector - Navigation Tabs */}
+        <div className="mb-6 flex gap-2 flex-wrap">
           <button
             onClick={() => setCurrentView('dashboard')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
               currentView === 'dashboard'
                 ? 'bg-green-500 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             <Leaf size={18} />
-            My Dashboard
+            Dashboard
+          </button>
+          <button
+            onClick={() => setCurrentView('rewards')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              currentView === 'rewards'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Gift size={18} />
+            Rewards
+          </button>
+          <button
+            onClick={() => setCurrentView('coupons')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              currentView === 'coupons'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Ticket size={18} />
+            My Coupons
+            {redeemedCoupons.length > 0 && (
+              <span className="bg-white text-green-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                {redeemedCoupons.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setCurrentView('leaderboard')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
               currentView === 'leaderboard'
                 ? 'bg-green-500 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             <Trophy size={18} />
-            Global Leaderboard
+            Leaderboard
+          </button>
+          <button
+            onClick={() => setCurrentView('businesses')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              currentView === 'businesses'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Store size={18} />
+            For Businesses
           </button>
         </div>
 
@@ -142,7 +207,7 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, on
         )}
 
         {/* Conditional Content Based on View */}
-        {currentView === 'dashboard' ? (
+        {currentView === 'dashboard' && (
           <>
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -194,12 +259,31 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, on
               breakdown={breakdown}
             />
           </>
-        ) : (
-          /* Leaderboard View */
+        )}
+
+        {currentView === 'rewards' && (
+          <RewardsMarketplace
+            availablePoints={rewardsData.totalPoints - rewardsData.spentPoints}
+            onRedeemCoupon={onRedeemCoupon}
+          />
+        )}
+
+        {currentView === 'coupons' && (
+          <MyCoupons
+            coupons={redeemedCoupons}
+            onMarkAsUsed={onMarkCouponAsUsed}
+          />
+        )}
+
+        {currentView === 'leaderboard' && (
           <Leaderboard
             currentUser={username}
             activities={activities}
           />
+        )}
+
+        {currentView === 'businesses' && (
+          <ForBusinesses />
         )}
       </main>
 

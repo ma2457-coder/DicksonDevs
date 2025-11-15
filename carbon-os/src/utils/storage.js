@@ -11,6 +11,8 @@ const STORAGE_KEYS = {
   ACHIEVEMENTS: 'achievements',
   SLEEP_MODE: 'sleep_mode',
   ONBOARDING_COMPLETE: 'onboarding_complete',
+  REDEEMED_COUPONS: 'redeemed_coupons',
+  REWARDS_DATA: 'rewards_data',
 };
 
 /**
@@ -215,6 +217,8 @@ export function clearAllData(username) {
       STORAGE_KEYS.ACHIEVEMENTS,
       STORAGE_KEYS.SLEEP_MODE,
       STORAGE_KEYS.ONBOARDING_COMPLETE,
+      STORAGE_KEYS.REDEEMED_COUPONS,
+      STORAGE_KEYS.REWARDS_DATA,
     ];
     keys.forEach(key => {
       localStorage.removeItem(getUserKey(username, key));
@@ -223,5 +227,86 @@ export function clearAllData(username) {
   } catch (error) {
     console.error('Error clearing data:', error);
     return false;
+  }
+}
+
+/**
+ * Save redeemed coupons
+ */
+export function saveRedeemedCoupons(username, coupons) {
+  try {
+    const key = getUserKey(username, STORAGE_KEYS.REDEEMED_COUPONS);
+    localStorage.setItem(key, JSON.stringify(coupons));
+    return true;
+  } catch (error) {
+    console.error('Error saving redeemed coupons:', error);
+    return false;
+  }
+}
+
+/**
+ * Get redeemed coupons
+ */
+export function getRedeemedCoupons(username) {
+  try {
+    const key = getUserKey(username, STORAGE_KEYS.REDEEMED_COUPONS);
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading redeemed coupons:', error);
+    return [];
+  }
+}
+
+/**
+ * Add a redeemed coupon
+ */
+export function addRedeemedCoupon(username, coupon) {
+  const coupons = getRedeemedCoupons(username);
+  coupons.push(coupon);
+  return saveRedeemedCoupons(username, coupons);
+}
+
+/**
+ * Mark coupon as used
+ */
+export function markCouponAsUsed(username, couponId) {
+  try {
+    const coupons = getRedeemedCoupons(username);
+    const updatedCoupons = coupons.map(c =>
+      c.id === couponId ? { ...c, used: true } : c
+    );
+    return saveRedeemedCoupons(username, updatedCoupons);
+  } catch (error) {
+    console.error('Error marking coupon as used:', error);
+    return false;
+  }
+}
+
+/**
+ * Save rewards data (points, streaks)
+ */
+export function saveRewardsData(username, rewardsData) {
+  try {
+    const key = getUserKey(username, STORAGE_KEYS.REWARDS_DATA);
+    localStorage.setItem(key, JSON.stringify(rewardsData));
+    return true;
+  } catch (error) {
+    console.error('Error saving rewards data:', error);
+    return false;
+  }
+}
+
+/**
+ * Get rewards data
+ */
+export function getRewardsData(username) {
+  try {
+    const key = getUserKey(username, STORAGE_KEYS.REWARDS_DATA);
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : { currentStreak: 0, longestStreak: 0, totalPoints: 0, spentPoints: 0 };
+  } catch (error) {
+    console.error('Error loading rewards data:', error);
+    return { currentStreak: 0, longestStreak: 0, totalPoints: 0, spentPoints: 0 };
   }
 }

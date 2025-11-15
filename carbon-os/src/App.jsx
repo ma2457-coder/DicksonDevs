@@ -14,8 +14,14 @@ import {
   isOnboardingComplete,
   setOnboardingComplete,
   logout,
+  getRedeemedCoupons,
+  addRedeemedCoupon,
+  markCouponAsUsed,
+  getRewardsData,
+  saveRewardsData,
 } from './utils/storage';
 import { calculateActivityEmissions } from './utils/carbonCalculator';
+import { calculateStreakAndPoints } from './utils/rewardsCalculator';
 
 function App() {
   const [currentUser, setCurrentUserState] = useState(null);
@@ -23,6 +29,8 @@ function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [activities, setActivities] = useState([]);
   const [sleepMode, setSleepModeState] = useState(false);
+  const [rewardsData, setRewardsData] = useState({ currentStreak: 0, longestStreak: 0, totalPoints: 0, spentPoints: 0 });
+  const [redeemedCoupons, setRedeemedCoupons] = useState([]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -31,6 +39,25 @@ function App() {
       handleLogin(user);
     }
   }, []);
+
+  // Calculate rewards whenever activities change
+  useEffect(() => {
+    if (currentUser && activities.length > 0) {
+      const calculated = calculateStreakAndPoints(activities);
+      const storedRewards = getRewardsData(currentUser);
+
+      // Update rewards data with calculated values but keep spent points
+      const updatedRewards = {
+        currentStreak: calculated.currentStreak,
+        longestStreak: Math.max(calculated.longestStreak, storedRewards.longestStreak),
+        totalPoints: calculated.totalPoints,
+        spentPoints: storedRewards.spentPoints || 0,
+      };
+
+      setRewardsData(updatedRewards);
+      saveRewardsData(currentUser, updatedRewards);
+    }
+  }, [activities, currentUser]);
 
   const handleLogin = (username) => {
     setCurrentUser(username);
@@ -41,11 +68,15 @@ function App() {
     const storedActivities = getActivities(username);
     const storedSleepMode = getSleepMode(username);
     const onboardingComplete = isOnboardingComplete(username);
+    const storedCoupons = getRedeemedCoupons(username);
+    const storedRewards = getRewardsData(username);
 
     if (profile) setUserProfile(profile);
     setActivities(storedActivities);
     setSleepModeState(storedSleepMode);
     setShowOnboarding(!onboardingComplete);
+    setRedeemedCoupons(storedCoupons);
+    setRewardsData(storedRewards);
   };
 
   const handleLogout = () => {
@@ -55,6 +86,8 @@ function App() {
     setActivities([]);
     setSleepModeState(false);
     setShowOnboarding(false);
+    setRedeemedCoupons([]);
+    setRewardsData({ currentStreak: 0, longestStreak: 0, totalPoints: 0, spentPoints: 0 });
   };
 
   const handleOnboardingComplete = (profile) => {
@@ -85,6 +118,28 @@ function App() {
     setSleepMode(currentUser, newSleepMode);
   };
 
+  const handleRedeemCoupon = (pointsCost, coupon) => {
+    // Update rewards data
+    const updatedRewards = {
+      ...rewardsData,
+      spentPoints: rewardsData.spentPoints + pointsCost,
+    };
+    setRewardsData(updatedRewards);
+    saveRewardsData(currentUser, updatedRewards);
+
+    // Add redeemed coupon
+    addRedeemedCoupon(currentUser, coupon);
+    setRedeemedCoupons([...redeemedCoupons, coupon]);
+  };
+
+  const handleMarkCouponAsUsed = (couponId) => {
+    markCouponAsUsed(currentUser, couponId);
+    const updatedCoupons = redeemedCoupons.map(c =>
+      c.id === couponId ? { ...c, used: true } : c
+    );
+    setRedeemedCoupons(updatedCoupons);
+  };
+
   // Show login if no user is authenticated
   if (!currentUser) {
     return <LoginSignup onLogin={handleLogin} />;
@@ -104,6 +159,10 @@ function App() {
       onToggleSleepMode={handleToggleSleepMode}
       onLogout={handleLogout}
       username={currentUser}
+      rewardsData={rewardsData}
+      redeemedCoupons={redeemedCoupons}
+      onRedeemCoupon={handleRedeemCoupon}
+      onMarkCouponAsUsed={handleMarkCouponAsUsed}
     />
   );
 }
