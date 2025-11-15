@@ -1,1 +1,1 @@
-This is the desscription.
+This is the description.
