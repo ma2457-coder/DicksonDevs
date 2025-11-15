@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award, LogOut, User } from 'lucide-react';
+import { Leaf, Car, ShoppingBag, Zap, Plus, Moon, Sun, Settings, Award, LogOut, User, Trophy } from 'lucide-react';
 import MetricsCard from './MetricsCard';
 import ActivityLogger from './ActivityLogger';
 import Charts from './Charts';
 import Insights from './Insights';
+import Leaderboard from './Leaderboard';
 import {
   getEmissionsByPeriod,
   compareToAverage,
@@ -13,6 +14,7 @@ import {
 const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, onLogout, username }) => {
   const [isLoggerOpen, setIsLoggerOpen] = useState(false);
   const [period, setPeriod] = useState('daily');
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'leaderboard'
 
   const totalEmissions = getEmissionsByPeriod(activities, period);
   const comparison = compareToAverage(totalEmissions, period);
@@ -94,72 +96,111 @@ const Dashboard = ({ activities, onAddActivity, sleepMode, onToggleSleepMode, on
           </div>
         )}
 
-        {/* Period Selector */}
-        <div className="mb-6 flex gap-2">
-          {['daily', 'weekly', 'monthly'].map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                period === p
-                  ? 'bg-green-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {periodData[p].label}
-            </button>
-          ))}
+        {/* View Selector - Dashboard vs Leaderboard */}
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all ${
+              currentView === 'dashboard'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Leaf size={18} />
+            My Dashboard
+          </button>
+          <button
+            onClick={() => setCurrentView('leaderboard')}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all ${
+              currentView === 'leaderboard'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Trophy size={18} />
+            Global Leaderboard
+          </button>
         </div>
 
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricsCard
-            title="Total Emissions"
-            value={totalEmissions.toFixed(1)}
-            unit="kg CO₂e"
-            icon={Leaf}
-            comparison={`${periodData[period].label}`}
-          />
-          <MetricsCard
-            title="vs. National Avg"
-            value={comparison.percentage}
-            unit="%"
-            icon={Award}
-            comparison={
-              comparison.betterThanAverage
-                ? '✓ Below average!'
-                : '↑ Above average'
-            }
-          />
-          <MetricsCard
-            title="Transportation"
-            value={
-              breakdown.find((b) => b.category === 'transportation')?.value.toFixed(1) || 0
-            }
-            unit="kg CO₂e"
-            icon={Car}
-          />
-          <MetricsCard
-            title="Shopping & Energy"
-            value={(
-              (breakdown.find((b) => b.category === 'shopping')?.value || 0) +
-              (breakdown.find((b) => b.category === 'energy')?.value || 0)
-            ).toFixed(1)}
-            unit="kg CO₂e"
-            icon={ShoppingBag}
-          />
-        </div>
+        {/* Period Selector - Only show for dashboard view */}
+        {currentView === 'dashboard' && (
+          <div className="mb-6 flex gap-2">
+            {['daily', 'weekly', 'monthly'].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  period === p
+                    ? 'bg-green-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {periodData[p].label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Charts */}
-        <Charts activities={activities} period={period} />
+        {/* Conditional Content Based on View */}
+        {currentView === 'dashboard' ? (
+          <>
+            {/* Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <MetricsCard
+                title="Total Emissions"
+                value={totalEmissions.toFixed(1)}
+                unit="kg CO₂e"
+                icon={Leaf}
+                comparison={`${periodData[period].label}`}
+              />
+              <MetricsCard
+                title="vs. National Avg"
+                value={comparison.percentage}
+                unit="%"
+                icon={Award}
+                comparison={
+                  comparison.betterThanAverage
+                    ? '✓ Below average!'
+                    : '↑ Above average'
+                }
+              />
+              <MetricsCard
+                title="Transportation"
+                value={
+                  breakdown.find((b) => b.category === 'transportation')?.value.toFixed(1) || 0
+                }
+                unit="kg CO₂e"
+                icon={Car}
+              />
+              <MetricsCard
+                title="Shopping & Energy"
+                value={(
+                  (breakdown.find((b) => b.category === 'shopping')?.value || 0) +
+                  (breakdown.find((b) => b.category === 'energy')?.value || 0)
+                ).toFixed(1)}
+                unit="kg CO₂e"
+                icon={ShoppingBag}
+              />
+            </div>
 
-        {/* Insights */}
-        <Insights
-          activities={activities}
-          totalEmissions={totalEmissions}
-          comparison={comparison}
-          breakdown={breakdown}
-        />
+            {/* Charts */}
+            <Charts activities={activities} period={period} />
+
+            {/* Insights */}
+            <Insights
+              activities={activities}
+              totalEmissions={totalEmissions}
+              comparison={comparison}
+              breakdown={breakdown}
+            />
+          </>
+        ) : (
+          /* Leaderboard View */
+          <Leaderboard
+            currentUser={username}
+            activities={activities}
+          />
+        )}
       </main>
 
       {/* Activity Logger Modal */}
